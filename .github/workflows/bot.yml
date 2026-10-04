@@ -1,8 +1,6 @@
 name: Twitter to Telegram
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
 jobs:
   bot:
     runs-on: ubuntu-latest
@@ -13,13 +11,8 @@ jobs:
           import requests, re
           BOT="8520671007:AAG-gmwnuvzTWOL_7ZsA1h5KCqetYrDt95A"
           CH="@alha64"
-          try:
-              r=requests.get("https://api.fxtwitter.com/hilalstuff",timeout=30).json()
-              txt=r['tweets'][0]['text']
-              txt=re.sub(r'https?://t\.co/\S+|https?://\S+','',txt).strip()
-              msg=f"{txt}\n\n@alha64"
-              requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":msg},timeout=20)
-              print("SENT:",msg)
-          except Exception as e:
-              print("ERROR:",e)
+          r=requests.get("https://api.fxtwitter.com/hilalstuff",timeout=30).json()
+          txt=r['tweets'][0]['text']
+          txt=re.sub(r'https://\S+','',txt).strip()
+          requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":txt+"\n\n@alha64"})
           PY
