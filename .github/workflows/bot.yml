@@ -1,8 +1,6 @@
 name: Twitter to Telegram
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
 jobs:
   bot:
     runs-on: ubuntu-latest
@@ -10,49 +8,18 @@ jobs:
       - run: |
           pip install requests -q
           python - << 'PY'
-          import requests, re, xml.etree.ElementTree as ET
-
+          import requests
           BOT="8520671007:AAG-gmwnuvzTWOL_7ZsA1h5KCqetYrDt95A"
           CH="@alha64"
-          USER="hilalstuff"
-
-          def get_tweet():
-              # Try 1: Nitter RSS
-              for nitter in ["https://nitter.privacydev.net","https://nitter.poast.org","https://nitter.net"]:
-                  try:
-                      r=requests.get(f"{nitter}/{USER}/rss",timeout=15,headers={"User-Agent":"Mozilla/5.0"})
-                      if "<title>" in r.text:
-                          root=ET.fromstring(r.content)
-                          # first item
-                          for item in root.findall(".//item"):
-                              title=item.find("title").text
-                              if title and not title.startswith(USER+" /"):
-                                  return title
-                          # fallback regex
-                          m=re.search(r'<item>.*?<title>(.*?)</title>',r.text,re.S)
-                          if m: return m.group(1)
-                  except: pass
-
-              # Try 2: fxtwitter / vxtwitter API
-              for api in [f"https://api.fxtwitter.com/{USER}", f"https://api.vxtwitter.com/{USER}", f"https://api.fxdx.io/{USER}"]:
-                  try:
-                      j=requests.get(api,timeout=15).json()
-                      if 'tweets' in j and j['tweets']:
-                          return j['tweets'][0]['text']
-                      if 'timeline' in j and j['timeline']:
-                          return j['timeline'][0]['text']
-                  except: pass
-              return None
-
-          txt=get_tweet()
-          if not txt:
-              print("No tweet found")
-              exit(0)
-          # remove links like fas.st / t.co
+          r=requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":"✅ تم ربط البوت بالقناة بنجاح @alha64\n\nالآن بجرب أجيب تغريدة..."})
+          print("TEST:",r.text)
+          try:
+              j=requests.get("https://api.vxtwitter.com/hilalstuff",headers={"User-Agent":"Mozilla/5.0"},timeout=20).json()
+              txt=j.get('tweets',[{}])[0].get('text') or j.get('timeline',[{}])[0].get('text') or "ما لقيت تغريدة"
+          except Exception as e:
+              txt=f"خطأ في الجلب: {e}"
+          import re
           txt=re.sub(r'https?://\S+','',txt).strip()
-          # remove extra spaces
-          txt=re.sub(r'\n{3,}','\n\n',txt)
-          msg=f"{txt}\n\n@alha64"
-          print("SENDING:",msg)
-          requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":msg,"disable_web_page_preview":True},timeout=20)
+          requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":txt+"\n\n@alha64"})
+          print("SENT TWEET:",txt[:200])
           PY
