@@ -7,17 +7,19 @@ jobs:
   bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Run bot
-        run: |
+      - run: |
           pip install requests
-          python << 'PY'
+          python - << 'PY'
           import requests, re
           BOT="8520671007:AAG-gmwnuvzTWOL_7ZsA1h5KCqetYrDt95A"
           CH="@alha64"
-          r=requests.get("https://api.fxtwitter.com/hilalstuff",timeout=20).json()
-          txt=r['tweets'][0]['text']
-          txt=re.sub(r'https?://\S+','',txt).strip()
-          msg=txt+"\n\n@alha64"
-          requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":msg})
-          print(msg)
+          try:
+              r=requests.get("https://api.fxtwitter.com/hilalstuff",timeout=30).json()
+              txt=r['tweets'][0]['text']
+              txt=re.sub(r'https?://t\.co/\S+|https?://\S+','',txt).strip()
+              msg=f"{txt}\n\n@alha64"
+              requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":msg},timeout=20)
+              print("SENT:",msg)
+          except Exception as e:
+              print("ERROR:",e)
           PY
