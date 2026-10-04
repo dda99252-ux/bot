@@ -1,0 +1,20 @@
+name: Twitter to Telegram
+on:
+  schedule:
+    - cron: '*/2 * * * *'
+  workflow_dispatch:
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          pip install requests
+          python - << 'PY'
+          import requests, re
+          BOT="8520671007:AAG-gmwnuvzTWOL_7ZsA1h5KCqetYrDt95A"
+          CH="@alha64"
+          r=requests.get("https://api.fxtwitter.com/hilalstuff",timeout=15).json()
+          txt=re.sub(r'https?://\S+','',r['tweets'][0]['text']).strip()
+          msg=txt+"\n\n@alha64"
+          requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":msg})
+          PY
