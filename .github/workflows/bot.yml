@@ -1,25 +1,46 @@
 name: Twitter to Telegram
 on:
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 jobs:
   bot:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          pip install requests -q
+          pip install requests feedparser -q
           python - << 'PY'
-          import requests
-          BOT="8520671007:AAG-gmwnuvzTWOL_7ZsA1h5KCqetYrDt95A"
+          import requests, re, feedparser
+          BOT="8520671007:AAH429qlThOxNyBbxrJNIi1vYJqQ40_8WdI"
           CH="@alha64"
-          r=requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":"✅ تم ربط البوت بالقناة بنجاح @alha64\n\nالآن بجرب أجيب تغريدة..."})
-          print("TEST:",r.text)
+          USER="hilalstuff"
+
+          # جرب أكثر من مصدر
+          text=None
           try:
-              j=requests.get("https://api.vxtwitter.com/hilalstuff",headers={"User-Agent":"Mozilla/5.0"},timeout=20).json()
-              txt=j.get('tweets',[{}])[0].get('text') or j.get('timeline',[{}])[0].get('text') or "ما لقيت تغريدة"
-          except Exception as e:
-              txt=f"خطأ في الجلب: {e}"
-          import re
-          txt=re.sub(r'https?://\S+','',txt).strip()
-          requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":txt+"\n\n@alha64"})
-          print("SENT TWEET:",txt[:200])
+              r=requests.get(f"https://api.fxtwitter.com/{USER}",timeout=15,headers={"User-Agent":"Mozilla/5.0"}).json()
+              if r.get('tweets'):
+                  text=r['tweets'][0]['text']
+          except: pass
+
+          if not text:
+              try:
+                  feed=feedparser.parse(f"https://nitter.privacydev.net/{USER}/rss")
+                  if feed.entries:
+                      text=feed.entries[0].title
+              except: pass
+
+          if not text:
+              print("No tweet found")
+              exit(0)
+
+          # تنظيف الروابط
+          text=re.sub(r'https?://\S+','',text).strip()
+          text=re.sub(r'\n+','\n',text)
+          final=f"{text}\n\n@alha64"
+
+          # إرسال
+          res=requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage",data={"chat_id":CH,"text":final})
+          print("TELEGRAM:",res.text)
+          print("SENT:",final[:200])
           PY
